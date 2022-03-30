@@ -1,7 +1,9 @@
-module.exports = new class {
-  getUsers (req, res, next) {
-    res.status(200).json({
-      msg: 'ok'
-    })
-  }
-}()
+const getUsers = (req, res, next) => {
+  res.send({
+    msg: 'ok'
+  })
+}
+
+module.exports = {
+  getUsers
+}
