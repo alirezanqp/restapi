@@ -7,7 +7,7 @@
     "author": "Alireza Naghdipour <alirezanqp@gmail.com>",
     "license": "MIT",
     "scripts": {
-        "start": "nodemon app"
+        "start": "nodemon"
     },
     "dependencies": {
         "cors": "^2.8.5",
