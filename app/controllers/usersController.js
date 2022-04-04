@@ -3,15 +3,30 @@ const User = require('../models/userModel')
 
 const getUsers = async (req, res, next) => {
   let projection = {}
+  // eslint-disable-next-line no-prototype-builtins
   if (req.query.hasOwnProperty('fields')) {
     projection = req.query.fields.split(',').reduce((total, current) => {
       return { [current]: 1, ...total }
     }, {})
   }
-  const users = await User.find({}, projection)
+
+  const perPage = req.query.limit || 10
+  const page = req.query.page || 1
+  const userCount = await User.count()
+  const totalPages = Math.ceil(userCount / perPage)
+  const offset = (page - 1) * perPage
+
+  const users = await User.find({}, projection).limit(perPage).skip(offset)
   res.status(200).json({
     msg: 'لیست کاربران',
-    data: users
+    data: { users },
+    meta: {
+      page: page,
+      limit: perPage,
+      pages: totalPages,
+      next: hasNextPage(page, totalPages) ? `${process.env.APP_URL}/api/users?page=${+page + 1}` : null,
+      prev: hasPrevPage(page) ? `${process.env.APP_URL}/api/users?page=${page - 1}` : null
+    }
   })
 }
 
@@ -56,6 +71,28 @@ const addUser = async (req, res, next) => {
   }
 }
 
+const updateUser = async (req, res, next) => {
+  try {
+    const { id } = req.params
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).send({
+        status: 400,
+        msg: 'id not valid!'
+      })
+    }
+    const { n, nModefied } = await User.findByIdAndUpdate(id, { ...req.body })
+    if (n == null || nModefied === 0) {
+      throw new Error('عملیات بروزرسانی با خطا مواجه شد')
+    }
+    return res.status(200).send({
+      msg: 'کاربر موردنظر با موفقیت آپدیت شد',
+      data: nModefied
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 const deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params
@@ -78,9 +115,18 @@ const deleteUser = async (req, res, next) => {
   }
 }
 
+const hasNextPage = (page, totalPages) => {
+  return page < totalPages
+}
+
+const hasPrevPage = (page) => {
+  return page > 1
+}
+
 module.exports = {
   getUsers,
   addUser,
   getOneUser,
-  deleteUser
+  deleteUser,
+  updateUser
 }
